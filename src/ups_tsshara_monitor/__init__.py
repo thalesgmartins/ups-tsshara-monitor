@@ -1,0 +1,1 @@
+"""Init Monitoramento Serial dos Nobreaks UPS SYAL IN 4 a 12kVA TS Shara."""
