@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ups-tsshara-monitor"
+version = "0.0.1"
+description = "Monitoramento Serial dos Nobreaks UPS SYAL IN 4 a 12kVA TS Shara"
+readme = "README.md"
+requires-python = ">=3.8"
+
+dependencies = [
+    "pyserial",
+    "paho-mqtt"
+]
+
+[project.scripts]
+ups = "ups_tsshara_monitor.__main__:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
