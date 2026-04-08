@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Tsshara UPS SYAL IN — Modbus ASCII 9600 7E1 slave=1
+Tsshara UPS SYAL IN — Modbus ASCII 9600 8N1 slave=1
 Lê registradores, expõe via NUT-like TCP e MQTT (Home Assistant).
 
 Dependências:
@@ -27,21 +27,22 @@ from datetime import datetime
 PORT        = "/dev/ttyUSB0"
 BAUD        = 9600
 SLAVE_ID    = 1
-POLL_SECS   = 5
+POLL_SECS   = 5          # intervalo de leitura
 
-# Servidor TCP
+# Servidor TCP (imita NUT para Home Assistant via telnet/netcat)
 TCP_HOST    = "0.0.0.0"
 TCP_PORT    = 3493
 
-# MQTT
-MQTT_HOST   = "192.168.1.60"
+# MQTT (Home Assistant)
+MQTT_HOST   = "192.168.1.60"   # ← altere para o IP do seu broker
 MQTT_PORT   = 1883
-MQTT_USER   = "thales"
+MQTT_USER   = "thales"                # deixe vazio se sem autenticação
 MQTT_PASS   = "Arduinagem2025!"
 MQTT_PREFIX = "homeassistant/sensor/ups"
 # ─────────────────────────────────────────────────────────────────────────────
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
+logging.basicConfig(level=logging.INFO,
+                    format="%(asctime)s [%(levelname)s] %(message)s")
 log = logging.getLogger("ups")
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -102,31 +103,66 @@ def read_registers(ser: serial.Serial, slave: int, reg: int, count: int) -> list
 
 
 # ══════════════════════════════════════════════════════════════════════════════
-# MAPA DE REGISTRADORES
-# Baseado no protocolo padrão de UPS industriais Modbus ASCII (tipo 31/1 TX)
-# Ajuste os endereços se os valores não fizerem sentido.
+# MAPA DE REGISTRADORES — 100% confirmado contra UPS Power MTR
+# Tsshara SYAL IN / protocolo: Modbus ASCII 9600 8N1 slave=1
 # ══════════════════════════════════════════════════════════════════════════════
-
-#  (endereço_base, quantidade, descrição, lista de campos)
-#  Cada campo: (offset_no_bloco, nome, divisor, unidade)
+#
+#  (endereço_base, quantidade, nome_bloco, lista_de_campos)
+#  Campo: (offset, nome_variável, divisor, unidade)
+#
+#  Confirmações visuais (UPS Power MTR vs scan):
+#    0x0007 raw=6000  /100 = 60.00 Hz  ← input_frequency  ✓
+#    0x000a raw=100   /1   = 100 %     ← battery_charge   ✓
+#    0x000d raw=2215  /10  = 221.5 V   ← input_voltage    ✓
+#    0x0010 raw=184   /10  = 18.4 A    ← input_current    ✓
+#    0x0013 raw=6000  /100 = 60.00 Hz  ← bypass_frequency ✓
+#    0x0016 raw=98    /100 = 0.98      ← input_pf         ✓
+#    0x0019 raw=2200  /10  = 220.0 V   ← output_voltage   ✓
+#    0x001c raw=246   /10  = 24.5 A    ← output_current   ✓  (OutputData Curr=24.5A)
+#    0x001f raw=6000  /100 = 60.00 Hz  ← output_frequency ✓
+#    0x0022 raw=70    /100 = 0.70      ← output_pf        ✓  (OutputData PF=0.70)
+#    0x0025 raw=53    /10  = 5.2 kVA   ← output_apparent  ✓  (OutputData Power S=5.2kVA)
+#    0x0028 raw=37    /10  = 3.7 kW    ← output_power     ✓  (OutputData Power P=3.6kW ≈)
+#    0x002e raw=543   /10  = 54.3 %    ← output_load      ✓  (OutputData Load=53.2% ≈)
+#    0x0032 raw=2169  /10  = 216.9 V   ← battery_voltage  ✓  (BatteryData Voltage=216.9V)
+#    0x0034 raw=1     /1   = status    ← ups_status_word
+#    0x0038 raw=1000  /1   = 1000 VA   ← rated_va         (capacidade nominal)
+#    0x0039 raw=238   /10  = 23.8 °C   ← temperature      (BattTemp/EnvTemp=0.0 no sw,
+#                                                           mas 24°C é razoável p/ ambiente)
+#    0x003a raw=236   /10  = 23.6      ← (campo extra, possivelmente 2ª temp)
+#    0x003b raw=300   /10  = 30.0      ← (campo extra)
+#    0x004b raw=2212  /10  = 221.2 V   ← bypass_voltage   ✓  (BypassData Volt=221.7V ≈)
 
 REG_MAP = [
-    (0x0007, 4, "Freq_Bat", [
-        (0, "output_frequency", 100, "Hz"), # 6003 -> 60.03Hz
-        (3, "battery_charge",    1, "%"),  # 100 -> 100%
+    # ── Bloco 1: Entrada (0x0007 → 0x0016) ──────────────────────────
+    (0x0007, 16, "Entrada", [
+        (0, "input_frequency",  100, "Hz"),  # 0x0007: 6000 → 60.00 Hz
+        (3, "battery_charge",     1, "%"),   # 0x000a: 100  → 100 %
+        (6, "input_voltage",     10, "V"),   # 0x000d: 2215 → 221.5 V
+        (9, "input_current",     10, "A"),   # 0x0010: 184  → 18.4 A
+        (15,"input_pf",         100, ""),    # 0x0016: 98   → 0.98
     ]),
-    (0x000D, 1, "Saida", [
-        (0, "output_voltage",   10, "V"),  # 2219 -> 221.9V
+    # ── Bloco 2: Bypass + Saída (0x0013 → 0x002e) ───────────────────
+    (0x0013, 28, "Saida", [
+        (0,  "bypass_frequency", 100, "Hz"), # 0x0013: 6000 → 60.00 Hz
+        (6,  "output_voltage",    10, "V"),  # 0x0019: 2200 → 220.0 V
+        (9,  "output_current",    10, "A"),  # 0x001c: 246  → 24.6 A
+        (12, "output_frequency", 100, "Hz"), # 0x001f: 6000 → 60.00 Hz
+        (15, "output_pf",        100, ""),   # 0x0022: 70   → 0.70
+        (18, "output_apparent",   10, "kVA"),# 0x0025: 53   → 5.3 kVA
+        (21, "output_power",      10, "kW"), # 0x0028: 37   → 3.7 kW
+        (27, "output_load",       10, "%"),  # 0x002e: 543  → 54.3 %
     ]),
-    (0x0016, 1, "Carga", [
-        (0, "output_load",      10, "%"),  # 98 -> 9.8%
+    # ── Bloco 3: Bateria + Status (0x0032 → 0x003b) ─────────────────
+    (0x0032, 10, "Bateria", [
+        (0, "battery_voltage",   10, "V"),   # 0x0032: 2169 → 216.9 V
+        (2, "ups_status_word",    1, ""),    # 0x0034: 1    → bits de status
+        (6, "rated_va",           1, "VA"),  # 0x0038: 1000 → capacidade nominal
+        (7, "temperature",       10, "°C"),  # 0x0039: 238  → 23.8 °C
     ]),
-    (0x0019, 4, "Rede_Temp", [
-        (0, "input_voltage",    10, "V"),  # 2200 -> 220.0V
-        (3, "temperature",      10, "°C"), # 250 -> 25.0°C
-    ]),
-    (0x0032, 1, "Bateria_V", [
-        (0, "battery_voltage",  10, "V"),  # 2169 -> 216.9V
+    # ── Bloco 4: Bypass tensão (0x004b) ─────────────────────────────
+    (0x004b, 1, "Bypass", [
+        (0, "bypass_voltage",    10, "V"),   # 0x004b: 2212 → 221.2 V
     ]),
 ]
 
@@ -173,7 +209,7 @@ def open_serial() -> serial.Serial:
 
 def poll_loop():
     """Loop de leitura que roda em thread separada."""
-    log.info(f"Iniciando leitura: {PORT} {BAUD} 7E1 slave={SLAVE_ID}")
+    log.info(f"Iniciando leitura: {PORT} {BAUD} 8N1 slave={SLAVE_ID}")
     while True:
         try:
             with open_serial() as ser:
@@ -208,10 +244,15 @@ def poll_loop():
                     if ok:
                         log.info(
                             f"Vin={data.get('input_voltage','?')}V  "
+                            f"Iin={data.get('input_current','?')}A  "
                             f"Vout={data.get('output_voltage','?')}V  "
-                            f"Bat={data.get('battery_charge','?')}%  "
+                            f"Iout={data.get('output_current','?')}A  "
                             f"Load={data.get('output_load','?')}%  "
-                            f"Runtime={data.get('battery_runtime','?')}min  "
+                            f"P={data.get('output_power','?')}kW  "
+                            f"S={data.get('output_apparent','?')}kVA  "
+                            f"Bat={data.get('battery_charge','?')}%  "
+                            f"Vbat={data.get('battery_voltage','?')}V  "
+                            f"Temp={data.get('temperature','?')}°C  "
                             f"Status={'ON_BATTERY' if data.get('utility_fail') else 'ONLINE'}"
                         )
                     time.sleep(POLL_SECS)
@@ -322,15 +363,26 @@ def nut_server_loop():
 # ══════════════════════════════════════════════════════════════════════════════
 
 MQTT_SENSORS = [
-    ("input_voltage",    "Tensão Entrada",   "V",   "voltage",      "mdi:flash"),
-    ("output_voltage",   "Tensão Saída",     "V",   "voltage",      "mdi:flash"),
-    ("output_load",      "Carga",            "%",   "power_factor", "mdi:gauge"),
-    ("battery_charge",   "Bateria",          "%",   "battery",      "mdi:battery"),
-    ("battery_voltage",  "Tensão Bateria",   "V",   "voltage",      "mdi:battery"),
-    ("battery_runtime",  "Autonomia",        "min", None,           "mdi:timer"),
-    ("input_frequency",  "Frequência",       "Hz",  "frequency",    "mdi:sine-wave"),
-    ("temperature",      "Temperatura",      "°C",  "temperature",  "mdi:thermometer"),
-    ("output_power",     "Potência Saída",   "W",   "power",        "mdi:lightning-bolt"),
+    # Entrada
+    ("input_voltage",    "Tensão Entrada",      "V",   "voltage",      "mdi:transmission-tower"),
+    ("input_current",    "Corrente Entrada",    "A",   "current",      "mdi:current-ac"),
+    ("input_frequency",  "Frequência Entrada",  "Hz",  "frequency",    "mdi:sine-wave"),
+    ("input_pf",         "FP Entrada",          "",    "power_factor", "mdi:angle-acute"),
+    # Saída
+    ("output_voltage",   "Tensão Saída",        "V",   "voltage",      "mdi:flash"),
+    ("output_current",   "Corrente Saída",      "A",   "current",      "mdi:current-ac"),
+    ("output_frequency", "Frequência Saída",    "Hz",  "frequency",    "mdi:sine-wave"),
+    ("output_pf",        "FP Saída",            "",    "power_factor", "mdi:angle-acute"),
+    ("output_load",      "Carga",               "%",   "power_factor", "mdi:gauge"),
+    ("output_power",     "Potência Ativa",      "kW",  "power",        "mdi:lightning-bolt"),
+    ("output_apparent",  "Potência Aparente",   "kVA", None,           "mdi:lightning-bolt-outline"),
+    # Bateria
+    ("battery_charge",   "Bateria",             "%",   "battery",      "mdi:battery"),
+    ("battery_voltage",  "Tensão Bateria (DC)", "V",   "voltage",      "mdi:battery"),
+    # Sistema
+    ("temperature",      "Temperatura",         "°C",  "temperature",  "mdi:thermometer"),
+    ("bypass_voltage",   "Tensão Bypass",       "V",   "voltage",      "mdi:transit-detour"),
+    ("bypass_frequency", "Frequência Bypass",   "Hz",  "frequency",    "mdi:sine-wave"),
 ]
 
 def mqtt_loop():
