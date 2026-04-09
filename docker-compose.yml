@@ -1,7 +1,8 @@
 services:
   nut:
     build: .
-    volumes:
+    container_name: ups_tsshara_monitor
+    devices:
       - /dev:/dev/ttyUSB0
     environment:
       - MQTT_HOST=0.0.0.0
