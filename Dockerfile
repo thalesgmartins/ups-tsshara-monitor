@@ -31,6 +31,8 @@ RUN pip install --no-cache-dir .
 # Copia as configurações
 #COPY config/ ./config/
 
-# Comando para iniciar o Dispatcher
-ENTRYPOINT ["python", "-m", "nut"]
+# Comando para iniciar o Monitor
+ENTRYPOINT ["python", "-m", "ups_tsshara_monitor"]
+
+# Parâmetros que serão passados ao script
 CMD ["--mqtt"]
