@@ -1,5 +1,5 @@
 services:
-  nut:
+  ups-monitor:
     build: .
     container_name: ups_tsshara_monitor
     devices:
@@ -11,6 +11,5 @@ services:
       - UPS_POLL_SECS=5
     # Mapeamento local do código fonte, só descomentar caso for necessário codar/debugar o código.
     #volumes:
-    #        - ./ups_tsshara_monitor:/app/ups_tsshara_monitor
-      - ./logs:/app/logs
+    #  - ./ups_tsshara_monitor:/app/ups_tsshara_monitor
     restart: unless-stopped
