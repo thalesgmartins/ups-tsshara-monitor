@@ -29,7 +29,7 @@ COPY ups_tsshara_monitor/ ./ups_tsshara_monitor/
 RUN pip install --no-cache-dir .
 
 # Copia as configurações
-COPY config/ ./config/
+#COPY config/ ./config/
 
 # Comando para iniciar o Dispatcher
 ENTRYPOINT ["python", "-m", "nut"]
