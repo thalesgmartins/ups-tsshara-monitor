@@ -2,7 +2,14 @@ services:
   nut:
     build: .
     volumes:
-      - /dev:/dev
-      - ./ups_tsshara_monitor:/app/ups_tsshara_monitor
+      - /dev:/dev/ttyUSB0
+    environment:
+      - MQTT_HOST=0.0.0.0
+      - MQTT_USER=tecnicon
+      - MQTT_PASS=123
+      - UPS_POLL_SECS=5
+    # Mapeamento local do código fonte, só descomentar caso for necessário codar/debugar o código.
+    #volumes:
+    #        - ./ups_tsshara_monitor:/app/ups_tsshara_monitor
       - ./logs:/app/logs
     restart: unless-stopped
