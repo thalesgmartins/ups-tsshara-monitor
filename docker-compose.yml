@@ -1,0 +1,8 @@
+services:
+  nut:
+    build: .
+    volumes:
+      - /dev:/dev
+      - ./ups_tsshara_monitor:/app/ups_tsshara_monitor
+      - ./logs:/app/logs
+    restart: unless-stopped
