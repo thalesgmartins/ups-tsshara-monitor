@@ -1,14 +1,15 @@
 services:
+  # Instância Base do Monitor
   ups-monitor:
     build: .
-    container_name: ${SERVER_NAME}
+    container_name:  ups_monitor_iluminacao
     devices:
       - /dev/ttyUSB0:/dev/ttyTSSHARA0
-    environment:
-      - SERVER_NAME=${SERVER_NAME}
-      - MQTT_HOST=${MQTT_HOST}
-      - MQTT_USER=${MQTT_USER}
-      - MQTT_PASS=${MQTT_PASS}
+    env_file: ".env"
+    # Mapeamento local do código fonte, só descomentar caso for necessário codar/debugar o código.
+    #volumes:
+    #  - ./ups_tsshara_monitor:/app/ups_tsshara_monitor
+    restart: unless-stopped
     # Mapeamento local do código fonte, só descomentar caso for necessário codar/debugar o código.
     #volumes:
     #  - ./ups_tsshara_monitor:/app/ups_tsshara_monitor
