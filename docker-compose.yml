@@ -10,6 +10,6 @@ services:
       - MQTT_PASS=${MQTT_PASS}
       - UPS_POLL_SECS=${UPS_POLL_SECS}
     # Mapeamento local do código fonte, só descomentar caso for necessário codar/debugar o código.
-    #volumes:
-    #  - ./ups_tsshara_monitor:/app/ups_tsshara_monitor
+    volumes:
+      - ./ups_tsshara_monitor:/app/ups_tsshara_monitor
     restart: unless-stopped
