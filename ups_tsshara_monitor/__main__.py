@@ -8,8 +8,15 @@ import time
 from .poller import poll_loop
 from .mqtt import mqtt_loop
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
+
+VERMELHO = "\033[31m"
+VERDE = "\033[32m"
+AZUL= "\033[34m"
+RESET = "\033[0m"
+
+logging.basicConfig(level=logging.INFO, format=f"{VERDE}%(asctime)s{RESET} | {VERMELHO}%(levelname)s{RESET} | {AZUL}%(filename)s:%(lineno)d{RESET} | %(message)s")
 _LOGGER = logging.getLogger(__name__)
+
 
 def main():
     parser = argparse.ArgumentParser(description="Tsshara UPS SYAL IN monitor")
