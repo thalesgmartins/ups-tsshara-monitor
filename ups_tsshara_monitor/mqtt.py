@@ -28,7 +28,7 @@ def mqtt_loop(shared_state: dict, state_lock):
                     "icon": icon,
                     "device": {
                         "identifiers": [config.SERVER_NAME],
-                        "name": "Tsshara SYAL IN",
+                        "name": f"{config.SERVER_NAME} - Tsshara SYAL IN",
                         "manufacturer": "Tsshara",
                     },
                 }
