@@ -27,9 +27,10 @@ def mqtt_loop(shared_state: dict, state_lock):
                     "unit_of_measurement": unit,
                     "icon": icon,
                     "device": {
-                        "identifiers": [config.SERVER_NAME],
-                        "name": f"{config.SERVER_NAME} - Tsshara SYAL IN",
+                        "identifiers": [f"ups_monitor_{config.SERVER_NAME}"],
+                        "name": f"Nobreak {config.SERVER_NAME}",
                         "manufacturer": "Tsshara",
+                        "model": "SYAL IN",
                     },
                 }
                 if dev_class: cfg["device_class"] = dev_class
