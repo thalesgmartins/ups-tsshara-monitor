@@ -40,7 +40,8 @@ def mqtt_loop(shared_state: dict, state_lock):
             status_cfg = {
                 "name": "UPS Status", "unique_id": f"{config.SERVER_NAME}_status",
                 "state_topic": f"{config.MQTT_TOPIC}/status/state",
-                "icon": "mdi:power-plug", "device": {"identifiers": [config.SERVER_NAME]},
+                "icon": "mdi:power-plug", 
+                "device": {"identifiers": [f"ups_monitor_{config.SERVER_NAME}"]},
             }
             c.publish(f"{config.MQTT_TOPIC}/status/config", json.dumps(status_cfg), retain=True)
         else:
