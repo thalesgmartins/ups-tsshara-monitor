@@ -4,26 +4,18 @@ import argparse
 import threading
 import socket
 import json
+import time
 import logging
+import os
+import socket
+import struct
+import threading
 from datetime import datetime
 
-# ─── CONFIGURAÇÃO ────────────────────────────────────────────────────────────
-PORT        = "/dev/ttyUSB0"
-BAUD        = 9600
-SLAVE_ID    = 1
-POLL_SECS   = 5          # intervalo de leitura
+import serial
 
-# Servidor TCP (imita NUT para Home Assistant via telnet/netcat)
-TCP_HOST    = "0.0.0.0"
-TCP_PORT    = 3493
+from .config import *
 
-# MQTT (Home Assistant)
-MQTT_HOST   = "192.168.1.60"   # ← altere para o IP do seu broker
-MQTT_PORT   = 1883
-MQTT_USER   = "thales"                # deixe vazio se sem autenticação
-MQTT_PASS   = "Arduinagem2025!"
-MQTT_PREFIX = "homeassistant/sensor/ups"
-# ─────────────────────────────────────────────────────────────────────────────
 
 logging.basicConfig(level=logging.INFO,
                     format="%(asctime)s [%(levelname)s] %(message)s")
