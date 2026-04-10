@@ -1,7 +1,7 @@
 services:
   ups-monitor:
     build: .
-    container_name: ups_tsshara_monitor
+    container_name: ${SERVER_NAME}
     devices:
       - /dev/ttyUSB0:/dev/ttyTSSHARA0
     environment:
