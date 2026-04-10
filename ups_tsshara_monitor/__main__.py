@@ -337,8 +337,6 @@ def mqtt_loop():
 
 def main():
     parser = argparse.ArgumentParser(description="Tsshara UPS SYAL IN monitor")
-    parser.add_argument("--server", action="store_true", help="Inicia servidor TCP estilo NUT")
-    parser.add_argument("--mqtt",   action="store_true", help="Publica dados via MQTT")
     parser.add_argument("--debug",  action="store_true", help="Log verboso")
     args = parser.parse_args()
 
@@ -349,13 +347,8 @@ def main():
     t_poll = threading.Thread(target=poll_loop, daemon=True, name="poll")
     t_poll.start()
 
-    if args.server:
-        t_nut = threading.Thread(target=nut_server_loop, daemon=True, name="nut")
-        t_nut.start()
-
-    if args.mqtt:
-        t_mqtt = threading.Thread(target=mqtt_loop, daemon=True, name="mqtt")
-        t_mqtt.start()
+    t_mqtt = threading.Thread(target=mqtt_loop, daemon=True, name="mqtt")
+    t_mqtt.start()
 
     _LOGGER.info("TS Shara UPS SYAL IN Monitor Rodando")
     try:
