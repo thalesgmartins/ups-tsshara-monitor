@@ -5,6 +5,7 @@ services:
     devices:
       - /dev/ttyUSB0:/dev/ttyTSSHARA0
     environment:
+      - SERVER_NAME=${SERVER_NAME}
       - MQTT_HOST=${MQTT_HOST}
       - MQTT_USER=${MQTT_USER}
       - MQTT_PASS=${MQTT_PASS}
