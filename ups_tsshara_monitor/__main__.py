@@ -49,11 +49,11 @@ def parse_response(raw: bytes) -> list[int] | None:
         payload   = raw_bytes[:-1]
         received_lrc = raw_bytes[-1]
         if lrc(payload) != received_lrc:
-            log.warning("LRC inválido na resposta")
+            _LOGGER.warning("LRC inválido na resposta")
             # continua mesmo assim — alguns firmwares têm LRC errado
         func      = payload[1]
         if func & 0x80:               # erro Modbus
-            log.warning(f"Erro Modbus: código {payload[2]:#04x}")
+            _LOGGER.warning(f"Erro Modbus: código {payload[2]:#04x}")
             return None
         byte_count = payload[2]
         data_bytes = payload[3:3 + byte_count]
@@ -62,7 +62,7 @@ def parse_response(raw: bytes) -> list[int] | None:
             regs.append(struct.unpack(">H", data_bytes[i:i+2])[0])
         return regs
     except Exception as e:
-        log.debug(f"Erro ao parsear resposta: {e}  raw={raw!r}")
+        _LOGGER.debug(f"Erro ao parsear resposta: {e}  raw={raw!r}")
         return None
 
 def read_registers(ser: serial.Serial, slave: int, reg: int, count: int) -> list[int] | None:
@@ -184,7 +184,7 @@ def open_serial() -> serial.Serial:
 
 def poll_loop():
     """Loop de leitura que roda em thread separada."""
-    log.info(f"Iniciando leitura: {PORT} {BAUD} 8N1 slave={SLAVE_ID}")
+    _LOGGER.info(f"Iniciando leitura: {PORT} {BAUD} 8N1 slave={SLAVE_ID}")
     while True:
         try:
             with open_serial() as ser:
@@ -202,9 +202,9 @@ def poll_loop():
                                     if raw_val > 32767:
                                         raw_val -= 65536
                                     data[name] = round(raw_val / divisor, 2)
-                            log.debug(f"  [{section}] {regs}")
+                            _LOGGER.debug(f"  [{section}] {regs}")
                         else:
-                            log.warning(f"Sem resposta para bloco {section} (reg {base_reg:#06x})")
+                            _LOGGER.warning(f"Sem resposta para bloco {section} (reg {base_reg:#06x})")
 
                     if "ups_status_word" in data:
                         data.update(decode_status(int(data["ups_status_word"])))
@@ -217,7 +217,7 @@ def poll_loop():
                         _state.update(data)
 
                     if ok:
-                        log.info(
+                        _LOGGER.info(
                             f"Vin={data.get('input_voltage','?')}V  "
                             f"Iin={data.get('input_current','?')}A  "
                             f"Vout={data.get('output_voltage','?')}V  "
@@ -233,10 +233,10 @@ def poll_loop():
                     time.sleep(POLL_SECS)
 
         except serial.SerialException as e:
-            log.error(f"Erro serial: {e} — tentando novamente em 10s")
+            _LOGGER.error(f"Erro serial: {e} — tentando novamente em 10s")
             time.sleep(10)
         except Exception as e:
-            log.exception(f"Erro inesperado: {e}")
+            _LOGGER.exception(f"Erro inesperado: {e}")
             time.sleep(10)
 
 
@@ -369,7 +369,7 @@ def mqtt_loop():
 
     def on_connect(c, userdata, flags, rc):
         if rc == 0:
-            log.info(f"[MQTT] Conectado ao broker {MQTT_HOST}:{MQTT_PORT}")
+            _LOGGER.info(f"[MQTT] Conectado ao broker {MQTT_HOST}:{MQTT_PORT}")
             # Auto discovery Home Assistant
             for field, name, unit, dev_class, icon in MQTT_SENSORS:
                 config = {
@@ -402,7 +402,7 @@ def mqtt_loop():
             }
             c.publish(f"{MQTT_PREFIX}/status/config", json.dumps(status_config), retain=True)
         else:
-            log.error(f"[MQTT] Falha na conexão: rc={rc}")
+            _LOGGER.error(f"[MQTT] Falha na conexão: rc={rc}")
 
     client.on_connect = on_connect
     client.connect_async(MQTT_HOST, MQTT_PORT, 60)
@@ -425,7 +425,7 @@ def mqtt_loop():
         else:
             status = "Online"
         client.publish(f"{MQTT_PREFIX}/status/state", status, retain=True)
-        log.debug("[MQTT] Publicado")
+        _LOGGER.debug("[MQTT] Publicado")
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -454,12 +454,13 @@ def main():
         t_mqtt = threading.Thread(target=mqtt_loop, daemon=True, name="mqtt")
         t_mqtt.start()
 
-    log.info("Rodando. Ctrl+C para sair.")
+    _LOGGER.info("TS Shara UPS SYAL IN Monitor Rodando")
     try:
         while True:
             time.sleep(1)
-    except KeyboardInterrupt:
-        log.info("Encerrando.")
+    except Exception as e:
+        _LOGGER.info("Encerrando. Motivo: %s", e)
+
 
 if __name__ == "__main__":
     main()
