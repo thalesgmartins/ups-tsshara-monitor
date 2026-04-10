@@ -28,11 +28,5 @@ COPY ups_tsshara_monitor/ ./ups_tsshara_monitor/
 # Instala o projeto e dependências
 RUN pip install --no-cache-dir .
 
-# Copia as configurações
-#COPY config/ ./config/
-
 # Comando para iniciar o Monitor
 ENTRYPOINT ["python", "-m", "ups_tsshara_monitor"]
-
-# Parâmetros que serão passados ao script
-CMD ["--mqtt"]
