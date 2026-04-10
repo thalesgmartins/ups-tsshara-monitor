@@ -19,6 +19,7 @@ _LOGGER = logging.getLogger(__name__)
 
 
 def main():
+    # parser de argumentos
     parser = argparse.ArgumentParser(description="Tsshara UPS SYAL IN monitor")
     parser.add_argument("--debug",  action="store_true", help="Log verboso")
     args = parser.parse_args()
@@ -26,14 +27,15 @@ def main():
     if args.debug:
         logging.getLogger().setLevel(logging.DEBUG)
 
-    # A "memória" compartilhada entre as rotinas
+    # Cria a memória compartilhada para todas as rotinas
     shared_state = {}
     state_lock = threading.Lock()
 
-    # Passamos a memória para as threads
+    # Cria a inicia a thread do Polling Serial
     t_poll = threading.Thread(target=poll_loop, args=(shared_state, state_lock), daemon=True, name="poll")
     t_poll.start()
 
+    # Cria a inicia a thread do Mqtt
     t_mqtt = threading.Thread(target=mqtt_loop, args=(shared_state, state_lock), daemon=True, name="mqtt")
     t_mqtt.start()
 
