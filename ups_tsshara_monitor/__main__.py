@@ -100,8 +100,7 @@ def read_registers(ser: serial.Serial, slave: int, reg: int, count: int) -> list
 #    0x0032 raw=2169  /10  = 216.9 V   ← battery_voltage  ✓  (BatteryData Voltage=216.9V)
 #    0x0034 raw=1     /1   = status    ← ups_status_word
 #    0x0038 raw=1000  /1   = 1000 VA   ← rated_va         (capacidade nominal)
-#    0x0039 raw=238   /10  = 23.8 °C   ← temperature      (BattTemp/EnvTemp=0.0 no sw,
-#                                                           mas 24°C é razoável p/ ambiente)
+#    0x0039 raw=238   /10  = 23.8 °C   ← temperature      (BattTemp/EnvTemp=0.0 no sw, mas 24°C é razoável p/ ambiente)
 #    0x003a raw=236   /10  = 23.6      ← (campo extra, possivelmente 2ª temp)
 #    0x003b raw=300   /10  = 30.0      ← (campo extra)
 #    0x004b raw=2212  /10  = 221.2 V   ← bypass_voltage   ✓  (BypassData Volt=221.7V ≈)
