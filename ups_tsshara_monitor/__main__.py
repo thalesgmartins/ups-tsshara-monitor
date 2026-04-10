@@ -17,9 +17,8 @@ import serial
 from .config import *
 
 
-logging.basicConfig(level=logging.INFO,
-                    format="%(asctime)s [%(levelname)s] %(message)s")
-log = logging.getLogger("ups")
+logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
+_LOGGER = logging.getLogger(__name__)
 
 # ══════════════════════════════════════════════════════════════════════════════
 # MODBUS ASCII
