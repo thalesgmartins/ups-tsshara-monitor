@@ -3,12 +3,12 @@ services:
     build: .
     container_name: ups_tsshara_monitor
     devices:
-      - /dev/ttyUSB0:/dev/ttyUSB0
+      - /dev/ttyUSB0:/dev/ttyTSSHARA0
     environment:
-      - MQTT_HOST=0.0.0.0
-      - MQTT_USER=tecnicon
-      - MQTT_PASS=123
-      - UPS_POLL_SECS=5
+      - MQTT_HOST=${MQTT_HOST}
+      - MQTT_USER=${MQTT_USER}
+      - MQTT_PASS=${MQTT_PASS}
+      - UPS_POLL_SECS=${UPS_POLL_SECS}
     # Mapeamento local do código fonte, só descomentar caso for necessário codar/debugar o código.
     #volumes:
     #  - ./ups_tsshara_monitor:/app/ups_tsshara_monitor
