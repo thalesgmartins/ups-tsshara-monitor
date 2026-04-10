@@ -1,8 +1,6 @@
 """Start TS Shara UPS SYAL IN Monitor"""
 
 import argparse
-import threading
-import socket
 import json
 import time
 import logging
