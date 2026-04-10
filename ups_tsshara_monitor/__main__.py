@@ -1,21 +1,5 @@
-#!/usr/bin/env python3
-"""
-Tsshara UPS SYAL IN — Modbus ASCII 9600 8N1 slave=1
-Lê registradores, expõe via NUT-like TCP e MQTT (Home Assistant).
+"""Start TS Shara UPS SYAL IN Monitor"""
 
-Dependências:
-    pip install pyserial paho-mqtt
-
-Uso:
-    python3 ups_tsshara.py              # apenas leitura/log
-    python3 ups_tsshara.py --server     # + servidor TCP estilo NUT
-    python3 ups_tsshara.py --mqtt       # + publicação MQTT
-    python3 ups_tsshara.py --server --mqtt  # tudo junto
-"""
-
-import serial
-import time
-import struct
 import argparse
 import threading
 import socket
