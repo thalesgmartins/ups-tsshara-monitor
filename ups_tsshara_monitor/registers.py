@@ -2,7 +2,7 @@ REG_MAP = [
     # ── Bloco 1: Entrada (0x0007 → 0x0016) ──────────────────────────
     (0x0007, 16, "Entrada", [
         (0, "input_frequency",  100, "Hz"),  # 0x0007: 6000 → 60.00 Hz
-        (3, "battery_charge",     1, "%"),   # 0x000a: 100  → 100 %
+        #(3, "battery_charge",     1, "%"),   # 0x000a: 100  → 100 %
         (6, "input_voltage",     10, "V"),   # 0x000d: 2215 → 221.5 V
         (9, "input_current",     10, "A"),   # 0x0010: 184  → 18.4 A
         (15,"input_pf",         100, ""),    # 0x0016: 98   → 0.98
@@ -22,7 +22,7 @@ REG_MAP = [
     (0x0032, 10, "Bateria", [
         (0, "battery_voltage",   10, "V"),   # 0x0032: 2169 → 216.9 V
         (2, "ups_status_word",    1, ""),    # 0x0034: 1    → bits de status
-        (6, "rated_va",           1, "VA"),  # 0x0038: 1000 → capacidade nominal
+        (6, "battery_charge",           10, "%"),  # 0x0038: 1000 → capacidade nominal
         (7, "temperature",       10, "°C"),  # 0x0039: 238  → 23.8 °C
     ]),
     # ── Bloco 4: Bypass tensão (0x004b) ─────────────────────────────
