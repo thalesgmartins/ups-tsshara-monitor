@@ -8,7 +8,6 @@ import time
 from .poller import poll_loop
 from .mqtt import mqtt_loop
 
-
 VERMELHO = "\033[31m"
 VERDE = "\033[32m"
 AZUL= "\033[34m"
@@ -47,4 +46,5 @@ def main():
         _LOGGER.info("Encerrando. Motivo: %s", e)
 
 if __name__ == "__main__":
+    """Start TS Shara Monitor."""
     main()
