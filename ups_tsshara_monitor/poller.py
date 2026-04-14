@@ -49,6 +49,15 @@ def poll_loop(shared_state: dict, state_lock):
                     if "ups_status_word" in data:
                         data.update(registers.decode_status(int(data["ups_status_word"])))
 
+                    # --- TRAVA DE SOFTWARE PARA STATUS FLUTUANTE ---
+                    # 1. Se não tem tensão de entrada (ou muito baixa), FORÇA modo bateria
+                    if data.get("input_voltage", 220.0) < 100.0:
+                        data["utility_fail"] = True
+                    
+                    # 2. Se a carga da bateria baixar de 20%, FORÇA o aviso de bateria baixa
+                    if data.get("battery_charge", 100.0) <= 20.0:
+                        data["battery_low"] = True
+
                     data["timestamp"] = datetime.now().isoformat()
                     data["online"] = ok
 
