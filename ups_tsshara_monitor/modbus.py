@@ -1,3 +1,5 @@
+"""Decodifica um frame Modbus ASCII."""
+
 import struct
 import time
 import logging
@@ -8,10 +10,19 @@ _LOGGER = logging.getLogger(__name__)
 
 
 def lrc(data: bytes) -> int:
+    """
+    Inverte a soma de todos bytes da mensagem.
+
+    Funciona como um selo de garantia, que garante que a mensagem
+    foi recebida com integridade.
+    """
     return ((~sum(data) + 1) & 0xFF)
 
 
 def build_request(slave: int, func: int, reg: int, count: int) -> bytes:
+    """
+
+    """
     body = bytes([slave, func]) + struct.pack(">HH", reg, count)
     checksum = lrc(body)
     frame = body.hex().upper() + f"{checksum:02X}"
@@ -52,10 +63,18 @@ def parse_response(raw: bytes) -> list[int] | None:
 
 
 def read_registers(ser: serial.Serial, slave: int, reg: int, count: int) -> list[int] | None:
+    """
+    Faz a leitura dos registradores do Nobreak
+    """
     req = build_request(slave, 0x03, reg, count)
+
+    # Limpamos o buffer serial pra não ler lixo antigo
     ser.reset_input_buffer()
+
+
     ser.write(req)
     ser.flush()
+    
     time.sleep(0.3)
     raw = ser.read(ser.in_waiting or 128)
     if not raw:
