@@ -68,5 +68,22 @@ def mqtt_loop(shared_state: dict, state_lock):
             if field in d:
                 client.publish(f"{config.MQTT_TOPIC}/{field}/state", str(d[field]), retain=True)
         
-        status = "OB LB" if d.get("utility_fail") and d.get("battery_low") else "On Battery" if d.get("utility_fail") else "Online"
+
+
+        #
+        # Aqui é definido como vai se comportar a parte de status do sensor
+        #
+        is_on_battery = d.get("utility_fail", False)
+        bat_pct = d.get("battery_charge", 0)
+        
+        # Aplica as regras de negócio
+        if is_on_battery and d.get("battery_low"):
+            status = "OB LB"       # Falta de rede + Bateria Baixa
+        elif is_on_battery:
+            status = "On Battery"  # Falta de rede
+        elif not is_on_battery and bat_pct < 100:
+            status = "Charging"    # Rede OK, mas bateria ainda não chegou em 100%
+        else:
+            status = "Online"      # Rede OK e bateria totalmente carregada
+
         client.publish(f"{config.MQTT_TOPIC}/status/state", status, retain=True)
