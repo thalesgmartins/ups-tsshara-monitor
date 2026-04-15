@@ -12,6 +12,12 @@ _LOGGER = logging.getLogger(__name__)
 
 def mqtt_loop(shared_state: dict, state_lock):
     client = mqtt.Client(client_id=config.SERVER_NAME)
+
+    # 1. Definir o Tópico de Disponibilidade e o LWT (Last Will)
+    # Se o script cair, o broker avisa o HA que estamos "offline"
+    avail_topic = f"{config.MQTT_TOPIC}/availability"
+    client.will_set(avail_topic, "offline", qos=1, retain=True)
+
     if config.MQTT_USER:
         client.username_pw_set(config.MQTT_USER, config.MQTT_PASS)
 
