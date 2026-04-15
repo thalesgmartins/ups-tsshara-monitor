@@ -18,12 +18,18 @@ def mqtt_loop(shared_state: dict, state_lock):
     def on_connect(c, userdata, flags, rc):
         if rc == 0:
             _LOGGER.info(f"[MQTT] Conectado ao broker {config.MQTT_HOST}:{config.MQTT_PORT}")
+
+            # 2. Publicar que estamos Online assim que conectar
+            c.publish(avail_topic, "online", retain=True)
+
             # Auto discovery usando o Tópico Inteligente
             for field, name, unit, dev_class, icon in registers.MQTT_SENSORS:
                 cfg = {
                     "name": f"UPS {name}",
                     "unique_id": f"{config.SERVER_NAME}_{field}",
                     "state_topic": f"{config.MQTT_TOPIC}/{field}/state",
+                    "availability_topic": avail_topic, # Adicionado
+                    "expire_after": 120,               # 2 minutos
                     "unit_of_measurement": unit,
                     "icon": icon,
                     "device": {
@@ -40,6 +46,8 @@ def mqtt_loop(shared_state: dict, state_lock):
             status_cfg = {
                 "name": "UPS Status", "unique_id": f"{config.SERVER_NAME}_status",
                 "state_topic": f"{config.MQTT_TOPIC}/status/state",
+                "availability_topic": avail_topic, # Adicionado
+                "expire_after": 120,               # 2 minutos
                 "icon": "mdi:power-plug", 
                 "device": {"identifiers": [f"ups_monitor_{config.SERVER_NAME}"]},
             }
