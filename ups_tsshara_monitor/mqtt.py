@@ -78,7 +78,7 @@ def mqtt_loop(shared_state: dict, state_lock):
         
         # Aplica as regras de negócio
         if is_on_battery and d.get("battery_low"):
-            status = "OB LB"       # Falta de rede + Bateria Baixa
+            status = "Low Battery"  # Falta de rede + Bateria Baixa
         elif is_on_battery:
             status = "On Battery"  # Falta de rede
         elif not is_on_battery and bat_pct < 100:
