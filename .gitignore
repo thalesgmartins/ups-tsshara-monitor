@@ -1,5 +1,6 @@
 
 *.env
+docker-compose.yml
 
 # ---------------------------------------------------------
 # Gitignore do Python
