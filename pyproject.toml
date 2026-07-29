@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ups-tsshara-monitor"
-version = "0.0.1"
+version = "0.1.0"
 description = "Monitoramento Serial dos Nobreaks UPS SYAL IN 4 a 12kVA TS Shara"
 readme = "README.md"
 requires-python = ">=3.8"
