@@ -39,7 +39,7 @@ def poll_loop(shared_state: dict, state_lock):
                         regs = modbus.read_registers(ser, config.SLAVE_ID, base_reg, count)
                         if regs:
                             ok = True
-                            for offset, name, divisor, unit in fields:
+                            for offset, name, divisor, _unit in fields:
                                 if offset < len(regs):
                                     raw_val = regs[offset]
                                     if raw_val > 32767:
