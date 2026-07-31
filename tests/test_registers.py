@@ -30,8 +30,8 @@ def test_mqtt_sensors_nao_tem_field_duplicado():
 
 def test_reg_map_offsets_dentro_do_bloco():
     # Todo offset declarado precisa caber dentro do count do bloco.
-    for base_reg, count, secao, campos in registers.REG_MAP:
-        for offset, nome, divisor, unidade in campos:
+    for _base_reg, count, secao, campos in registers.REG_MAP:
+        for offset, nome, divisor, _unidade in campos:
             assert offset < count, (
                 f"{secao}/{nome}: offset {offset} >= count {count}"
             )
