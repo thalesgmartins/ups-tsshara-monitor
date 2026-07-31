@@ -11,15 +11,16 @@ Uso:
     python3 sniffer.py --raw        # dump hexadecimal bruto de tudo que chega
 """
 
-import serial
-import time
-import struct
 import argparse
+import struct
 import sys
+import time
 from datetime import datetime
 
-PORT     = "/dev/ttyUSB0"
-BAUD     = 9600
+import serial
+
+PORT = "/dev/ttyUSB0"
+BAUD = 9600
 SLAVE_ID = 1
 
 SEP = "─" * 64
@@ -28,14 +29,17 @@ SEP = "─" * 64
 # Modbus ASCII helpers
 # ══════════════════════════════════════════════════════════════════════════════
 
+
 def lrc(data: bytes) -> int:
-    return ((~sum(data) + 1) & 0xFF)
+    return (~sum(data) + 1) & 0xFF
+
 
 def build_request(slave, func, reg, count):
     body = bytes([slave, func]) + struct.pack(">HH", reg, count)
-    cs   = lrc(body)
+    cs = lrc(body)
     frame = body.hex().upper() + f"{cs:02X}"
     return f":{frame}\r\n".encode()
+
 
 def decode_ascii_frame(raw: bytes) -> dict | None:
     """Tenta decodificar um frame Modbus ASCII completo."""
@@ -43,23 +47,23 @@ def decode_ascii_frame(raw: bytes) -> dict | None:
         text = raw.decode("ascii", errors="ignore").strip()
         if not text.startswith(":"):
             return None
-        hex_str   = text[1:]
+        hex_str = text[1:]
         raw_bytes = bytes.fromhex(hex_str)
-        payload   = raw_bytes[:-1]
-        recv_lrc  = raw_bytes[-1]
-        calc_lrc  = lrc(payload)
+        payload = raw_bytes[:-1]
+        recv_lrc = raw_bytes[-1]
+        calc_lrc = lrc(payload)
 
         slave = payload[0]
-        func  = payload[1]
+        func = payload[1]
 
         result = {
             "slave": slave,
-            "func":  func,
+            "func": func,
             "lrc_ok": recv_lrc == calc_lrc,
             "raw": text,
         }
 
-        if func & 0x80:   # resposta de erro
+        if func & 0x80:  # resposta de erro
             result["error_code"] = payload[2] if len(payload) > 2 else "?"
             result["type"] = "ERROR"
             return result
@@ -67,33 +71,34 @@ def decode_ascii_frame(raw: bytes) -> dict | None:
         if func == 0x03:  # Read Holding Registers
             if len(payload) > 2:
                 byte_count = payload[2]
-                data_bytes = payload[3:3 + byte_count]
+                data_bytes = payload[3 : 3 + byte_count]
                 regs = []
                 for i in range(0, len(data_bytes) - 1, 2):
-                    regs.append(struct.unpack(">H", data_bytes[i:i+2])[0])
-                result["type"]      = "RESPONSE"
+                    regs.append(struct.unpack(">H", data_bytes[i : i + 2])[0])
+                result["type"] = "RESPONSE"
                 result["registers"] = regs
             else:
                 # É um request (só tem endereço e contagem)
-                reg   = struct.unpack(">H", payload[2:4])[0]
+                reg = struct.unpack(">H", payload[2:4])[0]
                 count = struct.unpack(">H", payload[4:6])[0]
-                result["type"]      = "REQUEST"
+                result["type"] = "REQUEST"
                 result["start_reg"] = reg
-                result["count"]     = count
+                result["count"] = count
         return result
     except Exception as e:
         return {"type": "PARSE_ERROR", "raw": repr(raw), "error": str(e)}
 
+
 def open_port(timeout=2):
     s = serial.Serial()
-    s.port     = PORT
+    s.port = PORT
     s.baudrate = BAUD
     s.bytesize = serial.EIGHTBITS
-    s.parity   = serial.PARITY_NONE
+    s.parity = serial.PARITY_NONE
     s.stopbits = serial.STOPBITS_ONE
-    s.timeout  = timeout
-    s.rtscts   = False
-    s.xonxoff  = False
+    s.timeout = timeout
+    s.rtscts = False
+    s.xonxoff = False
     s.open()
     time.sleep(0.1)
     s.dtr = True
@@ -102,9 +107,11 @@ def open_port(timeout=2):
     s.reset_input_buffer()
     return s
 
+
 # ══════════════════════════════════════════════════════════════════════════════
 # MODO 1 — Sniffer passivo
 # ══════════════════════════════════════════════════════════════════════════════
+
 
 def sniff(duration=90):
     print(SEP)
@@ -115,7 +122,7 @@ def sniff(duration=90):
     s = open_port(timeout=0.5)
     end = time.time() + duration
     buf = b""
-    last_regs = {}   # reg_base → [valores]
+    last_regs = {}  # reg_base → [valores]
 
     while time.time() < end:
         chunk = s.read(256)
@@ -148,6 +155,7 @@ def sniff(duration=90):
     print()
     print("Cole esses endereços no arquivo ups_tsshara.py → REG_MAP")
 
+
 def _process_sniff_line(raw, last_regs):
     ts = datetime.now().strftime("%H:%M:%S.%f")[:-3]
     decoded = decode_ascii_frame(raw)
@@ -158,9 +166,11 @@ def _process_sniff_line(raw, last_regs):
     lrc_mark = "✓" if decoded.get("lrc_ok", True) else "✗LRC"
 
     if t == "REQUEST":
-        reg   = decoded["start_reg"]
+        reg = decoded["start_reg"]
         count = decoded["count"]
-        print(f"  {ts}  → REQUEST  slave={decoded['slave']}  reg={reg:#06x}  count={count}  {lrc_mark}")
+        print(
+            f"  {ts}  → REQUEST  slave={decoded['slave']}  reg={reg:#06x}  count={count}  {lrc_mark}"
+        )
 
     elif t == "RESPONSE":
         regs = decoded["registers"]
@@ -183,6 +193,7 @@ def _process_sniff_line(raw, last_regs):
 # MODO 2 — Varredura de registradores
 # ══════════════════════════════════════════════════════════════════════════════
 
+
 def scan(start=0x0000, end_reg=0x00FF, block=5):
     """Varre registradores em blocos e mostra os que respondem."""
     print(SEP)
@@ -196,7 +207,7 @@ def scan(start=0x0000, end_reg=0x00FF, block=5):
     reg = start
     while reg <= end_reg:
         count = min(block, end_reg - reg + 1)
-        req   = build_request(SLAVE_ID, 0x03, reg, count)
+        req = build_request(SLAVE_ID, 0x03, reg, count)
 
         s.reset_input_buffer()
         s.write(req)
@@ -208,7 +219,9 @@ def scan(start=0x0000, end_reg=0x00FF, block=5):
             decoded = decode_ascii_frame(raw)
             if decoded and decoded.get("type") == "RESPONSE":
                 regs = decoded["registers"]
-                print(f"  ✓ reg {reg:#06x} ({reg:4d}): {regs}  (LRC {'✓' if decoded['lrc_ok'] else '✗'})")
+                print(
+                    f"  ✓ reg {reg:#06x} ({reg:4d}): {regs}  (LRC {'✓' if decoded['lrc_ok'] else '✗'})"
+                )
                 for i, val in enumerate(regs):
                     found[reg + i] = val
             elif decoded and decoded.get("type") == "ERROR":
@@ -233,7 +246,9 @@ def scan(start=0x0000, end_reg=0x00FF, block=5):
         v = found[r]
         # tenta interpretar como signed e como valor /10
         signed = v if v <= 32767 else v - 65536
-        print(f"  Reg {r:#06x} ({r:5d}):  raw={v:6d}  signed={signed:6d}  /10={signed/10:8.1f}  /100={signed/100:6.2f}")
+        print(
+            f"  Reg {r:#06x} ({r:5d}):  raw={v:6d}  signed={signed:6d}  /10={signed / 10:8.1f}  /100={signed / 100:6.2f}"
+        )
 
     print()
     print("Interprete os valores comparando com o que o UPS Power MTR mostra")
@@ -245,6 +260,7 @@ def scan(start=0x0000, end_reg=0x00FF, block=5):
 # MODO 3 — Dump raw
 # ══════════════════════════════════════════════════════════════════════════════
 
+
 def raw_dump(duration=30):
     print(SEP)
     print(f"DUMP RAW — {duration}s  (qualquer coisa que chegar na porta)")
@@ -254,10 +270,14 @@ def raw_dump(duration=30):
     while time.time() < end:
         chunk = s.read(256)
         if chunk:
-            ts  = datetime.now().strftime("%H:%M:%S.%f")[:-3]
+            ts = datetime.now().strftime("%H:%M:%S.%f")[:-3]
             hex_str = " ".join(f"{b:02X}" for b in chunk)
             try:
-                ascii_str = chunk.decode("ascii", errors="replace").replace("\r","\\r").replace("\n","\\n")
+                ascii_str = (
+                    chunk.decode("ascii", errors="replace")
+                    .replace("\r", "\\r")
+                    .replace("\n", "\\n")
+                )
             except:
                 ascii_str = "?"
             print(f"  {ts}  [{hex_str}]")
@@ -275,11 +295,17 @@ def raw_dump(duration=30):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--sniff",    action="store_true", help="Sniffer passivo (rode com UPS Power MTR aberto)")
-    parser.add_argument("--scan",     action="store_true", help="Varre registradores 0x0000-0x00FF")
-    parser.add_argument("--scan-ext", action="store_true", help="Varre faixa extendida 0x0000-0x03FF")
-    parser.add_argument("--raw",      action="store_true", help="Dump hexadecimal bruto")
-    parser.add_argument("--duration", type=int, default=90, help="Duração do sniff em segundos (default 90)")
+    parser.add_argument(
+        "--sniff", action="store_true", help="Sniffer passivo (rode com UPS Power MTR aberto)"
+    )
+    parser.add_argument("--scan", action="store_true", help="Varre registradores 0x0000-0x00FF")
+    parser.add_argument(
+        "--scan-ext", action="store_true", help="Varre faixa extendida 0x0000-0x03FF"
+    )
+    parser.add_argument("--raw", action="store_true", help="Dump hexadecimal bruto")
+    parser.add_argument(
+        "--duration", type=int, default=90, help="Duração do sniff em segundos (default 90)"
+    )
     args = parser.parse_args()
 
     if args.sniff:
