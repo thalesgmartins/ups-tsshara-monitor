@@ -169,7 +169,7 @@ def _process_sniff_line(raw, last_regs):
         reg = decoded["start_reg"]
         count = decoded["count"]
         print(
-            f"  {ts}  → REQUEST  slave={decoded['slave']}  reg={reg:#06x}  count={count}  {lrc_mark}"
+            f"  {ts}  → REQUEST  slave={decoded['slave']}  reg={reg:#06x}  count={count}  {lrc_mark}" # noqa: E501
         )
 
     elif t == "RESPONSE":
