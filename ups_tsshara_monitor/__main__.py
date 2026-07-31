@@ -15,7 +15,7 @@ RESET = "\033[0m"
 
 logging.basicConfig(
     level=logging.INFO,
-    format=f"{VERDE}%(asctime)s{RESET} | {VERMELHO}%(levelname)s{RESET} | {AZUL}%(filename)s:%(lineno)d{RESET} | %(message)s",
+    format=f"{VERDE}%(asctime)s{RESET} | {VERMELHO}%(levelname)s{RESET} | {AZUL}%(filename)s:%(lineno)d{RESET} | %(message)s",  # noqa: E501
 )
 _LOGGER = logging.getLogger(__name__)
 
