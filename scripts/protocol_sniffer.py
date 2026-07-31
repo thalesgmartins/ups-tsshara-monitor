@@ -278,7 +278,7 @@ def raw_dump(duration=30):
                     .replace("\r", "\\r")
                     .replace("\n", "\\n")
                 )
-            except:
+            except Exception:
                 ascii_str = "?"
             print(f"  {ts}  [{hex_str}]")
             print(f"          ascii: {ascii_str!r}")
