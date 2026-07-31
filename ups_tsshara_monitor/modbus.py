@@ -1,10 +1,10 @@
 """Decodifica um frame Modbus ASCII."""
 
+import logging
 import struct
 import time
-import logging
-import serial
 
+import serial
 
 _LOGGER = logging.getLogger(__name__)
 
