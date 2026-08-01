@@ -169,7 +169,7 @@ def _process_sniff_line(raw, last_regs):
         reg = decoded["start_reg"]
         count = decoded["count"]
         print(
-            f"  {ts}  → REQUEST  slave={decoded['slave']}  reg={reg:#06x}  count={count}  {lrc_mark}" # noqa: E501
+            f"  {ts}  → REQUEST  slave={decoded['slave']}  reg={reg:#06x}  count={count}  {lrc_mark}"  # noqa: E501
         )
 
     elif t == "RESPONSE":
@@ -220,7 +220,7 @@ def scan(start=0x0000, end_reg=0x00FF, block=5):
             if decoded and decoded.get("type") == "RESPONSE":
                 regs = decoded["registers"]
                 print(
-                    f"  ✓ reg {reg:#06x} ({reg:4d}): {regs}  (LRC {'✓' if decoded['lrc_ok'] else '✗'})" # noqa: E501
+                    f"  ✓ reg {reg:#06x} ({reg:4d}): {regs}  (LRC {'✓' if decoded['lrc_ok'] else '✗'})"  # noqa: E501
                 )
                 for i, val in enumerate(regs):
                     found[reg + i] = val
@@ -247,7 +247,7 @@ def scan(start=0x0000, end_reg=0x00FF, block=5):
         # tenta interpretar como signed e como valor /10
         signed = v if v <= 32767 else v - 65536
         print(
-            f"  Reg {r:#06x} ({r:5d}):  raw={v:6d}  signed={signed:6d}  /10={signed / 10:8.1f}  /100={signed / 100:6.2f}" # noqa: E501
+            f"  Reg {r:#06x} ({r:5d}):  raw={v:6d}  signed={signed:6d}  /10={signed / 10:8.1f}  /100={signed / 100:6.2f}"  # noqa: E501
         )
 
     print()
