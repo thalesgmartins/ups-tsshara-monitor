@@ -32,7 +32,5 @@ def test_reg_map_offsets_dentro_do_bloco():
     # Todo offset declarado precisa caber dentro do count do bloco.
     for _base_reg, count, secao, campos in registers.REG_MAP:
         for offset, nome, divisor, _unidade in campos:
-            assert offset < count, (
-                f"{secao}/{nome}: offset {offset} >= count {count}"
-            )
+            assert offset < count, f"{secao}/{nome}: offset {offset} >= count {count}"
             assert divisor != 0, f"{secao}/{nome}: divisor não pode ser zero"
