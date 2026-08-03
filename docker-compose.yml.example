@@ -11,6 +11,8 @@ services:
     image: ghcr.io/thalesgmartins/ups-tsshara-monitor:latest
     container_name: ups_monitor
     privileged: true
+    ports:
+      - "8080:8080"
     devices:
       - /dev/ttyTSSHARA0:/dev/ttyTSSHARA0
     env_file: ".env"

@@ -5,6 +5,8 @@ services:
     container_name:  ups_monitor
     devices:
       - /dev/ttyTSSHARA0:/dev/ttyTSSHARA0
+    ports:
+      - "8080:8080"
     env_file: ".env"
     # Mapeamento local do código fonte, facilita o desenvolvimento enquanto o container roda.
     volumes:
