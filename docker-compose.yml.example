@@ -1,12 +1,17 @@
+# _____ _____   _____ _                      ___  ___            _ _
+#|_   _/  ___| /  ___| |                     |  \/  |           (_) |
+#  | | \ `--.  \ `--.| |__   __ _ _ __ __ _  | .  . | ___  _ __  _| |_ ___  _ __
+#  | |  `--. \  `--. \ '_ \ / _` | '__/ _` | | |\/| |/ _ \| '_ \| | __/ _ \| '__|
+#  | | /\__/ / /\__/ / | | | (_| | | | (_| | | |  | | (_) | | | | | || (_) | |
+#  \_/ \____/  \____/|_| |_|\__,_|_|  \__,_| \_|  |_/\___/|_| |_|_|\__\___/|_|
+#
 services:
-  # Instância Base do Monitor
+  # Instância Base do TSShara Monitor
   ups-monitor:
-    build: .
-    container_name:  ups_monitor
+    image: ghcr.io/thalesgmartins/ups-tsshara-monitor:latest
+    container_name: ups_monitor
+    privileged: true
     devices:
       - /dev/ttyTSSHARA0:/dev/ttyTSSHARA0
     env_file: ".env"
-    # Mapeamento local do código fonte, só descomentar caso for necessário codar/debugar o código.
-    #volumes:
-    #  - ./ups_tsshara_monitor:/app/ups_tsshara_monitor
-    #restart: unless-stopped
+    restart: unless-stopped
