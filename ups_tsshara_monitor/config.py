@@ -13,6 +13,9 @@ MQTT_PASS = os.getenv("MQTT_PASS")
 MQTT_PREFIX = os.getenv("MQTT_PREFIX", "homeassistant/sensor")
 MQTT_TOPIC = f"{MQTT_PREFIX.rstrip('/')}/{SERVER_NAME}"
 
+# Configurações do Servidor HTTP
+HTTP_PORT = int(os.getenv("HTTP_PORT", 8080))
+
 # Saídas ativas (sinks). Ex.: SINKS="mqtt"  ou  SINKS="mqtt,websocket"
 SINKS = [s.strip() for s in os.getenv("SINKS", "mqtt").split(",") if s.strip()]
 
