@@ -13,6 +13,9 @@ MQTT_PASS = os.getenv("MQTT_PASS")
 MQTT_PREFIX = os.getenv("MQTT_PREFIX", "homeassistant/sensor")
 MQTT_TOPIC = f"{MQTT_PREFIX.rstrip('/')}/{SERVER_NAME}"
 
+# Saídas ativas (sinks). Ex.: SINKS="mqtt"  ou  SINKS="mqtt,websocket"
+SINKS = [s.strip() for s in os.getenv("SINKS", "mqtt").split(",") if s.strip()]
+
 # Configurações do Serial
 PORT = os.getenv("SERIAL_PORT", "/dev/ttyTSSHARA0")
 BAUD = int(os.getenv("SERIAL_BAUD", 9600))
