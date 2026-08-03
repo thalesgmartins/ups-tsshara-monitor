@@ -1,0 +1,12 @@
+# Override do compose para buildar o container localmente.
+services:
+  ups-monitor:
+    build: .
+    container_name:  ups_monitor
+    devices:
+      - /dev/ttyTSSHARA0:/dev/ttyTSSHARA0
+    env_file: ".env"
+    # Mapeamento local do código fonte, facilita o desenvolvimento enquanto o container roda.
+    volumes:
+      - ./ups_tsshara_monitor:/app/ups_tsshara_monitor
+    restart: unless-stopped
