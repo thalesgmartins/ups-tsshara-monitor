@@ -1,10 +1,12 @@
 import logging
 import time
+from collections.abc import Callable
 from datetime import datetime
 
 import serial
 
 from . import config, modbus, registers
+from .model import UpsReading
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -27,70 +29,67 @@ def open_serial() -> serial.Serial:
     return s
 
 
-def poll_loop(shared_state: dict, state_lock):
+def read_once(ser) -> UpsReading:
+    """Lê todos os blocos uma vez e devolve um UpsReading (values + status)."""
+    values = {}
+    ok = False
+    for base_reg, count, section, fields in registers.REG_MAP:
+        regs = modbus.read_registers(ser, config.SLAVE_ID, base_reg, count)
+        if regs:
+            ok = True
+            for offset, name, divisor, _unit in fields:
+                if offset < len(regs):
+                    raw_val = regs[offset]
+                    if raw_val > 32767:
+                        raw_val -= 65536
+                    values[name] = round(raw_val / divisor, 2)
+        else:
+            _LOGGER.warning(f"Sem resposta no bloco {section} (reg {base_reg:#06x})")
+
+    status = {}
+    if "ups_status_word" in values:
+        status = registers.decode_status(int(values["ups_status_word"]))
+
+    # --- TRAVA DE SOFTWARE PARA STATUS FLUTUANTE ---
+    input_v = values.get("input_voltage", 0)
+    bat_pct = values.get("battery_charge", 0)
+    if input_v > 180.0:
+        status["utility_fail"] = False
+    elif input_v < 100.0:
+        status["utility_fail"] = True
+    if bat_pct > 30.0:
+        status["battery_low"] = False
+    elif bat_pct <= 20.0:
+        status["battery_low"] = True
+
+    return UpsReading(values=values, status=status, online=ok, timestamp=datetime.now().isoformat())
+
+
+def poll_loop(on_reading: Callable[[UpsReading], None]):
+    """Laço de leitura. A cada ciclo entrega um UpsReading ao callback on_reading."""
     _LOGGER.info(f"Iniciando Serial: {config.PORT} {config.BAUD} 8N1 slave={config.SLAVE_ID}")
     while True:
         try:
             with open_serial() as ser:
                 while True:
-                    data = {}
-                    ok = False
-                    for base_reg, count, section, fields in registers.REG_MAP:
-                        regs = modbus.read_registers(ser, config.SLAVE_ID, base_reg, count)
-                        if regs:
-                            ok = True
-                            for offset, name, divisor, _unit in fields:
-                                if offset < len(regs):
-                                    raw_val = regs[offset]
-                                    if raw_val > 32767:
-                                        raw_val -= 65536
-                                    data[name] = round(raw_val / divisor, 2)
-                        else:
-                            _LOGGER.warning(
-                                f"Sem resposta no bloco {section} (reg {base_reg:#06x})"
-                            )
+                    reading = read_once(ser)
+                    on_reading(reading)
 
-                    if "ups_status_word" in data:
-                        data.update(registers.decode_status(int(data["ups_status_word"])))
-
-                    # --- TRAVA DE SOFTWARE PARA STATUS FLUTUANTE ---
-                    # Pega os valores reais pra validarmos o status do registrador
-                    input_v = data.get("input_voltage", 0)
-                    bat_pct = data.get("battery_charge", 0)
-
-                    # 1. Se não tem tensão de entrada (ou muito baixa), FORÇA modo bateria
-                    if input_v > 180.0:
-                        data["utility_fail"] = False
-                    elif input_v < 100.0:
-                        data["utility_fail"] = True
-
-                    # 2. Se a carga da bateria baixar de 20%, FORÇA o aviso de bateria baixa
-                    if bat_pct > 30.0:
-                        data["battery_low"] = False
-                    elif bat_pct <= 20.0:
-                        data["battery_low"] = True
-
-                    data["timestamp"] = datetime.now().isoformat()
-                    data["online"] = ok
-
-                    # Atualiza a memória global em segurança
-                    with state_lock:
-                        shared_state.clear()
-                        shared_state.update(data)
-
-                    if ok:
+                    if reading.online:
+                        v = reading.values
+                        estado = "ON_BATTERY" if reading.status.get("utility_fail") else "ONLINE"
                         _LOGGER.info(
-                            f"Vin={data.get('input_voltage', '?')}V  "
-                            f"Iin={data.get('input_current', '?')}A  "
-                            f"Vout={data.get('output_voltage', '?')}V  "
-                            f"Iout={data.get('output_current', '?')}A  "
-                            f"Load={data.get('output_load', '?')}%  "
-                            f"P={data.get('output_power', '?')}kW  "
-                            f"S={data.get('output_apparent', '?')}kVA  "
-                            f"Bat={data.get('battery_charge', '?')}%  "
-                            f"Vbat={data.get('battery_voltage', '?')}V  "
-                            f"Temp={data.get('temperature', '?')}°C  "
-                            f"Status={'ON_BATTERY' if data.get('utility_fail') else 'ONLINE'}"
+                            f"Vin={v.get('input_voltage', '?')}V  "
+                            f"Iin={v.get('input_current', '?')}A  "
+                            f"Vout={v.get('output_voltage', '?')}V  "
+                            f"Iout={v.get('output_current', '?')}A  "
+                            f"Load={v.get('output_load', '?')}%  "
+                            f"P={v.get('output_power', '?')}kW  "
+                            f"S={v.get('output_apparent', '?')}kVA  "
+                            f"Bat={v.get('battery_charge', '?')}%  "
+                            f"Vbat={v.get('battery_voltage', '?')}V  "
+                            f"Temp={v.get('temperature', '?')}°C  "
+                            f"Status={estado}"
                         )
 
                     time.sleep(config.POLL_SECS)
