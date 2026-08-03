@@ -9,8 +9,6 @@ Essa documentação busca explicar e demonstrar o passo a passo para utilizar e 
 
 ### Setup de Desenvolvimento em Python
 
-- [Instalando o Ambiente Virtual do Python]()
-
 ### Setup de Desenvolvimento em Docker
 
 ## Configurações de Hardware
