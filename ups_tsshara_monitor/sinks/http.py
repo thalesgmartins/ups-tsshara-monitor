@@ -29,13 +29,30 @@ class HttpSink:
                     self.send_header("Content-type", "application/json")
                     self.end_headers()
 
-                    if sink_instance.ultima_leitura:
-                        # Monta o payload baseado no seu dataclass
+                   if sink_instance.ultima_leitura:
+                        leitura = sink_instance.ultima_leitura
+                        
+                        # Função auxiliar para replicar a lógica do MQTT
+                        on_battery = leitura.status.get("utility_fail", False)
+                        bat_pct = leitura.values.get("battery_charge", 0.0)
+                        
+                        if on_battery and leitura.status.get("battery_low"):
+                            estado_texto = "Low Battery"
+                        elif on_battery:
+                            estado_texto = "On Battery"
+                        elif bat_pct < 100:
+                            estado_texto = "Charging"
+                        else:
+                            estado_texto = "Online"
+
+                        # Monta o payload novo, destacando o que mais importa
                         payload = {
-                            "online": sink_instance.ultima_leitura.online,
-                            "timestamp": sink_instance.ultima_leitura.timestamp,
-                            "values": sink_instance.ultima_leitura.values,
-                            "status": sink_instance.ultima_leitura.status,
+                            "online": leitura.online,
+                            "timestamp": leitura.timestamp,
+                            "status_resumido": estado_texto,             # <- O status textual limpo!
+                            "battery_percent": bat_pct,                  # <- Bateria logo de cara!
+                            "values": leitura.values,                    # Mantém os dados numéricos brutos
+                            "raw_flags": leitura.status                  # Renomeia os booleanos antigos para raw_flags
                         }
                         self.wfile.write(json.dumps(payload).encode("utf-8"))
                     else:
