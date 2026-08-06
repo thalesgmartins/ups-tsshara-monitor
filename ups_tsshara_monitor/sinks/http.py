@@ -49,7 +49,7 @@ class HttpSink:
                         payload = {
                             "online": leitura.online,
                             "timestamp": leitura.timestamp,
-                            "status_resumido": estado_texto,  # <- O status textual limpo!
+                            "status": estado_texto,  # <- O status textual limpo!
                             "battery_percent": bat_pct,  # <- Bateria logo de cara!
                             "values": leitura.values,  # Mantém os dados numéricos brutos
                             "raw_flags": leitura.status,
